@@ -255,7 +255,7 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
         <div className="map-world" style={worldStyle}>
           <img
             className="map-art"
-            src="/images/brighter-worlds-map.webp"
+            src={`${import.meta.env.BASE_URL}images/brighter-worlds-map.webp`}
             alt="A cosmic map of eight miniature worlds from ordinary life in 2010s China"
             draggable="false"
           />
