@@ -1,5 +1,5 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
-import DuskNeighborhood from './DuskNeighborhood'
+import MemoryMap from './MemoryMap'
 import NightValley from './NightValley'
 
 type AmbientNodes = {
@@ -9,7 +9,7 @@ type AmbientNodes = {
   sources: AudioScheduledSourceNode[]
 }
 
-type View = 'valley' | 'travel' | 'neighborhood'
+type View = 'valley' | 'travel' | 'map'
 
 const tunnelStreaks = Array.from({ length: 36 }, (_, index) => ({
   angle: index * 10,
@@ -83,7 +83,7 @@ function App() {
 
   useEffect(() => {
     if (view !== 'travel') return
-    const timer = window.setTimeout(() => setView('neighborhood'), 1900)
+    const timer = window.setTimeout(() => setView('map'), 1900)
     return () => window.clearTimeout(timer)
   }, [view])
 
@@ -120,7 +120,7 @@ function App() {
     }
   }, [])
 
-  const showValley = view !== 'neighborhood'
+  const showValley = view !== 'map'
 
   return (
     <main className={`experience view-${view}`}>
@@ -162,7 +162,7 @@ function App() {
             <a
               className="go-button"
               href="#places"
-              aria-label="Travel to the dusk neighborhood"
+              aria-label="Travel to the memory map"
               onClick={(event) => { event.preventDefault(); beginJourney() }}
               onPointerEnter={() => setHovering(true)}
               onPointerLeave={() => setHovering(false)}
@@ -206,10 +206,10 @@ function App() {
           } as CSSProperties
           return <span className="tunnel-streak" style={style} key={index} />
         })}
-        <p>Follow the lights back to an ordinary evening.</p>
+        <p>Follow the lights back to when tomorrow felt wide open.</p>
       </div>
 
-      {view === 'neighborhood' && <DuskNeighborhood onReturn={returnToValley} />}
+      {view === 'map' && <MemoryMap onReturn={returnToValley} />}
 
       {showValley && (
         <div className={`loader ${loaded ? 'gone' : ''}`} aria-hidden="true">
