@@ -7,6 +7,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 
 type NightValleyProps = {
   hovering: boolean
+  traveling: boolean
   onLoaded: () => void
   onIntroDone: () => void
 }
@@ -68,13 +69,18 @@ const fragmentShader = /* glsl */ `
   }
 `
 
-function NightValley({ hovering, onLoaded, onIntroDone }: NightValleyProps) {
+function NightValley({ hovering, traveling, onLoaded, onIntroDone }: NightValleyProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const hoveringRef = useRef(hovering)
+  const travelingRef = useRef(traveling)
 
   useEffect(() => {
     hoveringRef.current = hovering
   }, [hovering])
+
+  useEffect(() => {
+    travelingRef.current = traveling
+  }, [traveling])
 
   useEffect(() => {
     const container = containerRef.current
@@ -246,13 +252,16 @@ function NightValley({ hovering, onLoaded, onIntroDone }: NightValleyProps) {
         const delta = Math.min(clock.getDelta(), 0.04)
         const elapsed = clock.elapsedTime
         const isHovering = hoveringRef.current
+        const isTraveling = travelingRef.current
 
-        if (!isHovering && !reduceMotion) {
+        if (isTraveling) {
+          targetProgress = 0.985
+        } else if (!isHovering && !reduceMotion) {
           targetProgress = Math.min(0.985, targetProgress + delta * 0.0023)
         }
 
         const previous = progress
-        progress = THREE.MathUtils.lerp(progress, targetProgress, isHovering ? 0.018 : 0.048)
+        progress = THREE.MathUtils.lerp(progress, targetProgress, isTraveling ? 0.12 : isHovering ? 0.018 : 0.048)
         velocity = THREE.MathUtils.lerp(velocity, Math.abs(progress - previous) / Math.max(delta, 0.001), 0.1)
         mouse.lerp(mouseTarget, 0.045)
 
@@ -262,14 +271,17 @@ function NightValley({ hovering, onLoaded, onIntroDone }: NightValleyProps) {
         camera.position.set(pathX, pathY, pathZ)
         camera.lookAt(pathX * 0.24 + mouse.x * 0.34, -0.35 + mouse.y * 0.16, pathZ - 15)
         camera.rotation.z += -mouse.x * 0.012
+        camera.fov = THREE.MathUtils.lerp(camera.fov, isTraveling ? 74 : 54, 0.08)
+        camera.updateProjectionMatrix()
 
         flowerUniforms.uTime.value = elapsed
         flowerUniforms.uMouse.value.copy(mouse)
         flowerUniforms.uDisperse.value = THREE.MathUtils.lerp(
           flowerUniforms.uDisperse.value,
-          isHovering ? 1 : 0,
-          isHovering ? 0.035 : 0.055,
+          isTraveling ? 2.1 : isHovering ? 1 : 0,
+          isTraveling ? 0.09 : isHovering ? 0.035 : 0.055,
         )
+        bloom.strength = THREE.MathUtils.lerp(bloom.strength, isTraveling ? 1.35 : 0.64, 0.06)
         dust.rotation.y = elapsed * 0.002
         dust.position.y = Math.sin(elapsed * 0.15) * 0.08
         ;(container.parentElement ?? container).style.setProperty('--travel-speed', String(Math.min(1, velocity * 10)))

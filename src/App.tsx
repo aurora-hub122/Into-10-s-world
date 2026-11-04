@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
+import DuskNeighborhood from './DuskNeighborhood'
 import NightValley from './NightValley'
 
 type AmbientNodes = {
@@ -7,6 +8,15 @@ type AmbientNodes = {
   gain: GainNode
   sources: AudioScheduledSourceNode[]
 }
+
+type View = 'valley' | 'travel' | 'neighborhood'
+
+const tunnelStreaks = Array.from({ length: 36 }, (_, index) => ({
+  angle: index * 10,
+  delay: -((index * 7) % 13) * 0.07,
+  length: 14 + ((index * 11) % 30),
+  offset: 3 + ((index * 5) % 18),
+}))
 
 function createAmbientSound(): AmbientNodes | null {
   const AudioContextClass = window.AudioContext ||
@@ -24,8 +34,7 @@ function createAmbientSound(): AmbientNodes | null {
   gain.connect(context.destination)
 
   const sources: AudioScheduledSourceNode[] = []
-  const tones = [55, 82.41, 110]
-  tones.forEach((frequency, index) => {
+  ;[55, 82.41, 110].forEach((frequency, index) => {
     const oscillator = context.createOscillator()
     const toneGain = context.createGain()
     oscillator.type = index === 1 ? 'triangle' : 'sine'
@@ -58,10 +67,25 @@ function App() {
   const [introDone, setIntroDone] = useState(false)
   const [hovering, setHovering] = useState(false)
   const [muted, setMuted] = useState(true)
+  const [view, setView] = useState<View>('valley')
   const ambientRef = useRef<AmbientNodes | null>(null)
 
   const handleLoaded = useCallback(() => setLoaded(true), [])
   const handleIntroDone = useCallback(() => setIntroDone(true), [])
+  const beginJourney = useCallback(() => {
+    setHovering(false)
+    setView('travel')
+  }, [])
+
+  const returnToValley = useCallback(() => {
+    setView('valley')
+  }, [])
+
+  useEffect(() => {
+    if (view !== 'travel') return
+    const timer = window.setTimeout(() => setView('neighborhood'), 1900)
+    return () => window.clearTimeout(timer)
+  }, [view])
 
   const toggleSound = useCallback(async () => {
     if (!ambientRef.current) ambientRef.current = createAmbientSound()
@@ -84,8 +108,8 @@ function App() {
     if (!ambient) return
     const now = ambient.context.currentTime
     ambient.filter.frequency.cancelScheduledValues(now)
-    ambient.filter.frequency.setTargetAtTime(hovering ? 380 : 1650, now, 0.28)
-  }, [hovering])
+    ambient.filter.frequency.setTargetAtTime(hovering || view === 'travel' ? 380 : 1650, now, 0.28)
+  }, [hovering, view])
 
   useEffect(() => {
     return () => {
@@ -96,72 +120,102 @@ function App() {
     }
   }, [])
 
+  const showValley = view !== 'neighborhood'
+
   return (
-    <main className="experience">
-      <div id="valley">
-        <NightValley hovering={hovering} onLoaded={handleLoaded} onIntroDone={handleIntroDone} />
-        <div className="valley-haze" />
-        <div className="valley-vignette" />
-      </div>
-
-      <div className={`hero-ui ${introDone ? 'on' : ''}`}>
-        <header className="topbar">
-          <a className="wordmark" href="#home" aria-label="The Internet Forgot the Afternoon">
-            The Internet Forgot the Afternoon
-          </a>
-          <nav aria-label="Main navigation">
-            <a href="#memories">Memories</a>
-            <a href="#archive">Archive</a>
-            <a href="#about">About</a>
-            <a className="nav-pill" href="#enter">Enter</a>
-          </nav>
-        </header>
-
-        <section className="valley-hero" id="home" aria-labelledby="hero-title">
-          <p className="eyebrow">An archive of ordinary attention</p>
-          <h1 id="hero-title">Before everything became a feed.</h1>
-          <p className="hero-caption">
-            The internet remembers what we clicked.
-            <br />
-            Who remembers what we felt?
-          </p>
-          <a
-            className="go-button"
-            href="#memories"
-            aria-label="Enter the memory archive"
-            onPointerEnter={() => setHovering(true)}
-            onPointerLeave={() => setHovering(false)}
-            onFocus={() => setHovering(true)}
-            onBlur={() => setHovering(false)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 12h16M14 6l6 6-6 6" />
-            </svg>
-          </a>
-        </section>
-
-        <div className="bottom-corner">
-          <span>Scroll to remember</span>
-          <i aria-hidden="true" />
-          <button
-            className="sound-button"
-            type="button"
-            aria-pressed={!muted}
-            aria-label={muted ? 'Play ambient sound' : 'Mute ambient sound'}
-            onClick={toggleSound}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 9.5v5h3.5L12 18V6L7.5 9.5Z" />
-              <path className="sound-waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
-              <path className="sound-x" d="m16 10 4 4m0-4-4 4" />
-            </svg>
-          </button>
+    <main className={`experience view-${view}`}>
+      {showValley && (
+        <div id="valley">
+          <NightValley
+            hovering={hovering}
+            traveling={view === 'travel'}
+            onLoaded={handleLoaded}
+            onIntroDone={handleIntroDone}
+          />
+          <div className="valley-haze" />
+          <div className="valley-vignette" />
         </div>
+      )}
+
+      {showValley && (
+        <div className={`hero-ui ${introDone && view === 'valley' ? 'on' : ''}`}>
+          <header className="topbar">
+            <a className="wordmark" href="#home" aria-label="When Tomorrow Felt Brighter">
+              When Tomorrow Felt Brighter
+            </a>
+            <nav aria-label="Main navigation">
+              <a href="#places" onClick={(event) => { event.preventDefault(); beginJourney() }}>Places</a>
+              <a href="#sounds">Sounds</a>
+              <a href="#about">About</a>
+              <a className="nav-pill" href="#begin" onClick={(event) => { event.preventDefault(); beginJourney() }}>Begin</a>
+            </nav>
+          </header>
+
+          <section className="valley-hero" id="home" aria-labelledby="hero-title">
+            <p className="eyebrow">A shared feeling of the 2010s</p>
+            <h1 id="hero-title">When tomorrow felt brighter.</h1>
+            <p className="hero-caption">
+              Return to a time when ordinary evenings
+              <br />
+              still seemed to open toward something better.
+            </p>
+            <a
+              className="go-button"
+              href="#places"
+              aria-label="Travel to the dusk neighborhood"
+              onClick={(event) => { event.preventDefault(); beginJourney() }}
+              onPointerEnter={() => setHovering(true)}
+              onPointerLeave={() => setHovering(false)}
+              onFocus={() => setHovering(true)}
+              onBlur={() => setHovering(false)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12h16M14 6l6 6-6 6" />
+              </svg>
+            </a>
+          </section>
+
+          <div className="bottom-corner">
+            <span>Scroll through the feeling</span>
+            <i aria-hidden="true" />
+            <button
+              className="sound-button"
+              type="button"
+              aria-pressed={!muted}
+              aria-label={muted ? 'Play ambient sound' : 'Mute ambient sound'}
+              onClick={toggleSound}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 9.5v5h3.5L12 18V6L7.5 9.5Z" />
+                <path className="sound-waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+                <path className="sound-x" d="m16 10 4 4m0-4-4 4" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`travel-tunnel ${view === 'travel' ? 'on' : ''}`} aria-hidden="true">
+        <div className="tunnel-centre" />
+        {tunnelStreaks.map((streak, index) => {
+          const style = {
+            '--streak-angle': `${streak.angle}deg`,
+            '--streak-delay': `${streak.delay}s`,
+            '--streak-length': `${streak.length}vmin`,
+            '--streak-offset': `${streak.offset}vmin`,
+          } as CSSProperties
+          return <span className="tunnel-streak" style={style} key={index} />
+        })}
+        <p>Follow the lights back to an ordinary evening.</p>
       </div>
 
-      <div className={`loader ${loaded ? 'gone' : ''}`} aria-hidden="true">
-        <span />
-      </div>
+      {view === 'neighborhood' && <DuskNeighborhood onReturn={returnToValley} />}
+
+      {showValley && (
+        <div className={`loader ${loaded ? 'gone' : ''}`} aria-hidden="true">
+          <span />
+        </div>
+      )}
     </main>
   )
 }
