@@ -1,200 +1,167 @@
-import { useEffect, useState } from 'react'
-import { Flower2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import NightValley from './NightValley'
 
-const menuItems = ['Home', 'The Rooms', 'The Archive', 'About']
+type AmbientNodes = {
+  context: AudioContext
+  filter: BiquadFilterNode
+  gain: GainNode
+  sources: AudioScheduledSourceNode[]
+}
+
+function createAmbientSound(): AmbientNodes | null {
+  const AudioContextClass = window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  if (!AudioContextClass) return null
+
+  const context = new AudioContextClass()
+  const filter = context.createBiquadFilter()
+  const gain = context.createGain()
+  filter.type = 'lowpass'
+  filter.frequency.value = 1650
+  filter.Q.value = 0.45
+  gain.gain.value = 0.0001
+  filter.connect(gain)
+  gain.connect(context.destination)
+
+  const sources: AudioScheduledSourceNode[] = []
+  const tones = [55, 82.41, 110]
+  tones.forEach((frequency, index) => {
+    const oscillator = context.createOscillator()
+    const toneGain = context.createGain()
+    oscillator.type = index === 1 ? 'triangle' : 'sine'
+    oscillator.frequency.value = frequency
+    oscillator.detune.value = index * 4 - 3
+    toneGain.gain.value = index === 0 ? 0.42 : 0.13
+    oscillator.connect(toneGain)
+    toneGain.connect(filter)
+    oscillator.start()
+    sources.push(oscillator)
+  })
+
+  const noiseBuffer = context.createBuffer(1, context.sampleRate * 3, context.sampleRate)
+  const noiseData = noiseBuffer.getChannelData(0)
+  for (let i = 0; i < noiseData.length; i += 1) {
+    noiseData[i] = (Math.random() * 2 - 1) * 0.08
+  }
+  const noise = context.createBufferSource()
+  noise.buffer = noiseBuffer
+  noise.loop = true
+  noise.connect(filter)
+  noise.start()
+  sources.push(noise)
+
+  return { context, filter, gain, sources }
+}
 
 function App() {
-  const [mounted, setMounted] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-  const [entering, setEntering] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [introDone, setIntroDone] = useState(false)
+  const [hovering, setHovering] = useState(false)
+  const [muted, setMuted] = useState(true)
+  const ambientRef = useRef<AmbientNodes | null>(null)
 
-  useEffect(() => {
-    const mountTimer = window.setTimeout(() => setMounted(true), 100)
-    const onScroll = () => setScrolled(window.scrollY > 40)
+  const handleLoaded = useCallback(() => setLoaded(true), [])
+  const handleIntroDone = useCallback(() => setIntroDone(true), [])
 
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
+  const toggleSound = useCallback(async () => {
+    if (!ambientRef.current) ambientRef.current = createAmbientSound()
+    const ambient = ambientRef.current
+    if (!ambient) return
+    await ambient.context.resume()
 
-    return () => {
-      window.clearTimeout(mountTimer)
-      window.removeEventListener('scroll', onScroll)
-    }
+    setMuted((currentMuted) => {
+      const nextMuted = !currentMuted
+      const now = ambient.context.currentTime
+      ambient.gain.gain.cancelScheduledValues(now)
+      ambient.gain.gain.setValueAtTime(Math.max(ambient.gain.gain.value, 0.0001), now)
+      ambient.gain.gain.exponentialRampToValueAtTime(nextMuted ? 0.0001 : 0.045, now + 0.8)
+      return nextMuted
+    })
   }, [])
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen || entering ? 'hidden' : ''
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [menuOpen, entering])
+    const ambient = ambientRef.current
+    if (!ambient) return
+    const now = ambient.context.currentTime
+    ambient.filter.frequency.cancelScheduledValues(now)
+    ambient.filter.frequency.setTargetAtTime(hovering ? 380 : 1650, now, 0.28)
+  }, [hovering])
 
-  const toggleMenu = () => setMenuOpen((isOpen) => !isOpen)
+  useEffect(() => {
+    return () => {
+      const ambient = ambientRef.current
+      if (!ambient) return
+      ambient.sources.forEach((source) => source.stop())
+      void ambient.context.close()
+    }
+  }, [])
 
   return (
-    <main id="home" className="min-h-screen bg-black text-white">
-      <header
-        className={`fixed left-0 top-0 z-50 w-full transition-all duration-500 ${
-          scrolled || menuOpen ? 'bg-black/80 backdrop-blur-md' : 'bg-transparent'
-        }`}
-      >
-        <nav className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6 md:h-20 md:px-10">
-          <a
-            href="#home"
-            className={`relative z-50 text-[0.7rem] font-semibold uppercase leading-tight tracking-[0.18em] transition-all duration-700 ease-entrance md:text-xs ${
-              mounted ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
-            }`}
-            onClick={() => setMenuOpen(false)}
-          >
-            The Door Is
-            <br />
-            Still Open
+    <main className="experience">
+      <div id="valley">
+        <NightValley hovering={hovering} onLoaded={handleLoaded} onIntroDone={handleIntroDone} />
+        <div className="valley-haze" />
+        <div className="valley-vignette" />
+      </div>
+
+      <div className={`hero-ui ${introDone ? 'on' : ''}`}>
+        <header className="topbar">
+          <a className="wordmark" href="#home" aria-label="The Internet Forgot the Afternoon">
+            The Internet Forgot the Afternoon
           </a>
+          <nav aria-label="Main navigation">
+            <a href="#memories">Memories</a>
+            <a href="#archive">Archive</a>
+            <a href="#about">About</a>
+            <a className="nav-pill" href="#enter">Enter</a>
+          </nav>
+        </header>
 
+        <section className="valley-hero" id="home" aria-labelledby="hero-title">
+          <p className="eyebrow">An archive of ordinary attention</p>
+          <h1 id="hero-title">Before everything became a feed.</h1>
+          <p className="hero-caption">
+            The internet remembers what we clicked.
+            <br />
+            Who remembers what we felt?
+          </p>
+          <a
+            className="go-button"
+            href="#memories"
+            aria-label="Enter the memory archive"
+            onPointerEnter={() => setHovering(true)}
+            onPointerLeave={() => setHovering(false)}
+            onFocus={() => setHovering(true)}
+            onBlur={() => setHovering(false)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 12h16M14 6l6 6-6 6" />
+            </svg>
+          </a>
+        </section>
+
+        <div className="bottom-corner">
+          <span>Scroll to remember</span>
+          <i aria-hidden="true" />
           <button
+            className="sound-button"
             type="button"
-            className={`relative z-50 hidden items-center gap-2 rounded-full border border-white/20 px-5 py-2 text-sm text-white/90 transition-[color,background-color,opacity,transform] duration-700 ease-entrance hover:bg-white/10 md:flex ${
-              mounted ? 'translate-y-0 opacity-100 delay-200' : '-translate-y-4 opacity-0'
-            }`}
-            aria-expanded={menuOpen}
-            aria-controls="site-menu"
-            onClick={toggleMenu}
+            aria-pressed={!muted}
+            aria-label={muted ? 'Play ambient sound' : 'Mute ambient sound'}
+            onClick={toggleSound}
           >
-            {menuOpen ? 'Close' : 'Navigate'}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9.5v5h3.5L12 18V6L7.5 9.5Z" />
+              <path className="sound-waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+              <path className="sound-x" d="m16 10 4 4m0-4-4 4" />
+            </svg>
           </button>
-
-          <div
-            className={`relative z-50 hidden transition-all duration-700 ease-entrance md:block ${
-              mounted ? 'translate-y-0 opacity-100 delay-[400ms]' : '-translate-y-4 opacity-0'
-            }`}
-            aria-hidden="true"
-          >
-            <Flower2 className="h-7 w-7 text-white/90" strokeWidth={1.4} />
-          </div>
-
-          <button
-            type="button"
-            className={`relative z-50 flex h-8 w-8 flex-col items-center justify-center gap-1.5 transition-all duration-700 ease-entrance md:hidden ${
-              mounted ? 'translate-y-0 opacity-100 delay-200' : '-translate-y-4 opacity-0'
-            }`}
-            aria-label="Toggle menu"
-            aria-expanded={menuOpen}
-            aria-controls="site-menu"
-            onClick={toggleMenu}
-          >
-            <span
-              className={`h-[2px] w-6 bg-white transition-transform duration-500 ease-overlay ${
-                menuOpen ? 'translate-y-[4px] rotate-45' : ''
-              }`}
-            />
-            <span
-              className={`h-[2px] w-6 bg-white transition-transform duration-500 ease-overlay ${
-                menuOpen ? '-translate-y-[4px] -rotate-45' : ''
-              }`}
-            />
-          </button>
-        </nav>
-      </header>
-
-      <div
-        id="site-menu"
-        className={`fixed inset-0 z-40 flex flex-col items-center justify-center bg-black transition-[opacity,visibility] duration-700 ease-overlay ${
-          menuOpen ? 'visible opacity-100' : 'invisible opacity-0'
-        }`}
-        aria-hidden={!menuOpen}
-      >
-        <div className="flex flex-col items-center gap-8 text-center">
-          {menuItems.map((item, index) => (
-            <a
-              key={item}
-              href={index === 0 ? '#home' : `#${item.toLowerCase().replace(' ', '-')}`}
-              className={`font-instrument text-4xl text-white transition-[opacity,transform] duration-[600ms] ease-overlay hover:opacity-60 md:text-6xl ${
-                menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
-              }`}
-              style={{ transitionDelay: menuOpen ? `${150 + index * 80}ms` : '0ms' }}
-              onClick={() => setMenuOpen(false)}
-            >
-              {item}
-            </a>
-          ))}
         </div>
       </div>
 
-      <section className="relative flex h-screen w-full items-end overflow-hidden" aria-labelledby="hero-title">
-        <div
-          className={`absolute inset-0 transition-[opacity,transform,filter] duration-[1400ms] ease-entrance ${
-            mounted ? 'scale-100 opacity-100' : 'scale-105 opacity-0'
-          } ${entering ? 'door-entering' : ''}`}
-        >
-          <img
-            src="/images/door-hero.webp"
-            alt="A weathered blue door glowing within a wall of flowers and dark foliage"
-            className="h-full w-full object-cover object-[34%_center] md:object-center"
-          />
-        </div>
-
-        <div className="relative z-10 ml-auto w-full px-6 pb-16 text-center md:w-[56%] md:px-10 md:pb-24 md:pr-[7vw] md:text-right">
-          <p
-            className={`mb-5 text-[0.62rem] font-medium uppercase tracking-[0.28em] text-white/65 transition-all duration-900 ease-entrance md:text-xs ${
-              mounted ? 'translate-y-0 opacity-100 delay-[350ms]' : 'translate-y-8 opacity-0'
-            }`}
-          >
-            An archive of ordinary attention
-          </p>
-          <h1
-            id="hero-title"
-            className={`mb-5 font-instrument text-[2.9rem] leading-[0.9] tracking-[-0.025em] text-white transition-all duration-900 ease-entrance sm:text-5xl md:mb-6 md:text-6xl lg:text-7xl xl:text-[5.3rem] ${
-              mounted ? 'translate-y-0 opacity-100 delay-[450ms]' : 'translate-y-8 opacity-0'
-            }`}
-          >
-            The Internet Forgot
-            <br className="hidden sm:block" /> the Afternoon
-          </h1>
-          <p
-            className={`mx-auto mb-8 max-w-md text-base leading-relaxed text-white/70 transition-all duration-900 ease-entrance md:mr-0 md:mb-10 md:text-lg ${
-              mounted ? 'translate-y-0 opacity-100 delay-[650ms]' : 'translate-y-8 opacity-0'
-            }`}
-          >
-            The internet remembers what we clicked. Who remembers what we felt?
-          </p>
-          <button
-            type="button"
-            className={`inline-flex items-center gap-3 rounded-full bg-white px-8 py-3.5 text-sm font-medium text-black transition-[background-color,opacity,transform] duration-900 ease-entrance hover:bg-white/90 md:text-base ${
-              mounted ? 'translate-y-0 opacity-100 delay-[850ms]' : 'translate-y-8 opacity-0'
-            }`}
-            onClick={() => setEntering(true)}
-          >
-            Open the door
-          </button>
-        </div>
-
-        <div
-          className={`pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black px-6 text-center transition-opacity duration-700 ${
-            entering ? 'threshold-visible opacity-100' : 'opacity-0'
-          }`}
-          aria-hidden={!entering}
-        >
-          <div className="max-w-xl">
-            <p className="mb-5 text-[0.65rem] font-medium uppercase tracking-[0.3em] text-white/50">
-              Somewhere behind this door
-            </p>
-            <p className="font-instrument text-4xl leading-tight text-white sm:text-5xl md:text-6xl">
-              An afternoon is still waiting.
-            </p>
-            <button
-              type="button"
-              className="pointer-events-auto mt-10 rounded-full border border-white/25 px-6 py-3 text-sm text-white/80 transition-colors hover:bg-white hover:text-black"
-              onClick={() => setEntering(false)}
-            >
-              Return to the door
-            </button>
-          </div>
-        </div>
-
-        <p className="absolute bottom-6 left-6 z-10 hidden text-[0.6rem] uppercase tracking-[0.2em] text-white/45 md:block">
-          A memory archive · 2010s China
-        </p>
-      </section>
+      <div className={`loader ${loaded ? 'gone' : ''}`} aria-hidden="true">
+        <span />
+      </div>
     </main>
   )
 }
