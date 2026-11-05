@@ -36,8 +36,8 @@ const mapNodes: MapNode[] = [
     era: 'PUBLIC JOY',
     sound: 'String lights clicking on, paper bags, a holiday song from a shop speaker',
     description: 'A few ornaments and warm bulbs could make an ordinary street feel as if everyone was waiting for something good together.',
-    x: 17,
-    y: 20,
+    x: 19,
+    y: 22,
     glow: '#f3c889',
     frequency: 659.25,
   },
@@ -49,7 +49,7 @@ const mapNodes: MapNode[] = [
     era: 'POSSIBILITY',
     sound: 'Pages turning, a pencil moving across a fashion sketch, quiet shop music',
     description: 'Before adulthood became practical, one book could open a future in which becoming a designer felt completely possible.',
-    x: 46,
+    x: 52,
     y: 20,
     glow: '#f3c889',
     frequency: 523.25,
@@ -62,8 +62,8 @@ const mapNodes: MapNode[] = [
     era: 'UNHURRIED TIME',
     sound: 'An old fan, cicadas, a porcelain plate of watermelon touching the table',
     description: 'Nothing spectacular happened here. The feeling came from having nowhere else to be and believing the afternoon would always return.',
-    x: 88,
-    y: 15,
+    x: 86,
+    y: 21,
     glow: '#f3c889',
     frequency: 220,
   },
@@ -75,8 +75,8 @@ const mapNodes: MapNode[] = [
     era: 'TIME WITHOUT PRICE',
     sound: 'Sneakers on concrete, marbles, cards hitting the ground, bicycle bells',
     description: 'The walk home expanded into games, arguments and one more round. Five-mao cards were enough to build a whole social world.',
-    x: 19,
-    y: 46,
+    x: 23,
+    y: 47,
     glow: '#4fd4df',
     frequency: 783.99,
   },
@@ -88,8 +88,8 @@ const mapNodes: MapNode[] = [
     era: 'WHAT REMAINED',
     sound: 'A metronome, three hesitant notes, the small electronic hum between them',
     description: 'Practice once felt like an obligation. Years later, the same keys became somewhere to rest when the world grew louder.',
-    x: 57,
-    y: 45,
+    x: 55,
+    y: 47,
     glow: '#4fd4df',
     frequency: 329.63,
   },
@@ -101,8 +101,8 @@ const mapNodes: MapNode[] = [
     era: 'EVERYTHING OPENING',
     sound: 'Escalator hum, toy demos, bright shop music folding into the corridor',
     description: 'Fluorescent passages promised gifts, games and new things arriving. Even going downstairs felt like entering a larger future.',
-    x: 84,
-    y: 49,
+    x: 79,
+    y: 48,
     glow: '#4fd4df',
     frequency: 261.63,
   },
@@ -114,8 +114,8 @@ const mapNodes: MapNode[] = [
     era: 'PLAY WITHOUT PURPOSE',
     sound: 'Carousel bells, ticket stubs tearing, a mechanical horse beginning another circle',
     description: 'The ride went nowhere, which was exactly the point. Happiness could be measured in whether there was time for one more turn.',
-    x: 22,
-    y: 78,
+    x: 17,
+    y: 77,
     glow: '#f3c889',
     frequency: 587.33,
   },
@@ -127,8 +127,8 @@ const mapNodes: MapNode[] = [
     era: 'SMALL ABUNDANCE',
     sound: 'Wrapping paper, plastic toys, a shopkeeper testing lights and batteries',
     description: 'The gift mattered, but so did the abundance around it: shelves of choices and the certainty that another birthday was coming.',
-    x: 82,
-    y: 79,
+    x: 74,
+    y: 76,
     glow: '#f3c889',
     frequency: 698.46,
   },
@@ -255,8 +255,8 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
         <div className="map-world" style={worldStyle}>
           <img
             className="map-art"
-            src={`${import.meta.env.BASE_URL}images/night-town-map.webp`}
-            alt="An isometric night town with eight warmly lit places connected by blue routes"
+            src={`${import.meta.env.BASE_URL}images/pixel-town.webp`}
+            alt="A pixel-art town at dusk with eight places connected by glowing routes"
             draggable="false"
           />
           {mapNodes.map((node) => {
@@ -284,12 +284,12 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
 
       <header className="map-header">
         <div>
-          <p className="map-wordmark">When Tomorrow Felt Brighter</p>
+          <p className="map-wordmark">WHEN TOMORROW FELT BRIGHTER</p>
           <p className="map-chinese">当明天还在发亮</p>
         </div>
         <div className="map-heading">
           <small>AN EVENING IN THE 2010s</small>
-          <h2>Find your way through town.</h2>
+          <h2>CHOOSE A PLACE TO VISIT</h2>
         </div>
         <button type="button" className="return-button" aria-label="Return to the flower valley" onClick={onReturn}>
           <span aria-hidden="true">←</span><span className="return-label">Return to the valley</span>
