@@ -8,7 +8,6 @@ type MapNode = {
   id: string
   number: string
   title: string
-  chinese: string
   era: string
   sound: string
   description: string
@@ -32,7 +31,6 @@ const mapNodes: MapNode[] = [
     id: 'winter-street',
     number: '01',
     title: 'Winter Street',
-    chinese: '可以一起庆祝的街道',
     era: 'PUBLIC JOY',
     sound: 'String lights clicking on, paper bags, a holiday song from a shop speaker',
     description: 'A few ornaments and warm bulbs could make an ordinary street feel as if everyone was waiting for something good together.',
@@ -45,7 +43,6 @@ const mapNodes: MapNode[] = [
     id: 'bookshop-dream',
     number: '02',
     title: 'Bookshop Dream',
-    chinese: '书架前还没有被限定的未来',
     era: 'POSSIBILITY',
     sound: 'Pages turning, a pencil moving across a fashion sketch, quiet shop music',
     description: 'Before adulthood became practical, one book could open a future in which becoming a designer felt completely possible.',
@@ -58,7 +55,6 @@ const mapNodes: MapNode[] = [
     id: 'grandparents-room',
     number: '03',
     title: 'The Summer Room',
-    chinese: '爷爷奶奶家的下午',
     era: 'UNHURRIED TIME',
     sound: 'An old fan, cicadas, a porcelain plate of watermelon touching the table',
     description: 'Nothing spectacular happened here. The feeling came from having nowhere else to be and believing the afternoon would always return.',
@@ -71,7 +67,6 @@ const mapNodes: MapNode[] = [
     id: 'school-corner',
     number: '04',
     title: 'After School',
-    chinese: '藤蔓走廊和五毛钱的小卡片',
     era: 'TIME WITHOUT PRICE',
     sound: 'Sneakers on concrete, marbles, cards hitting the ground, bicycle bells',
     description: 'The walk home expanded into games, arguments and one more round. Five-mao cards were enough to build a whole social world.',
@@ -84,7 +79,6 @@ const mapNodes: MapNode[] = [
     id: 'music-room',
     number: '05',
     title: 'Music Room',
-    chinese: '每周一次的电子琴课',
     era: 'WHAT REMAINED',
     sound: 'A metronome, three hesitant notes, the small electronic hum between them',
     description: 'Practice once felt like an obligation. Years later, the same keys became somewhere to rest when the world grew louder.',
@@ -97,7 +91,6 @@ const mapNodes: MapNode[] = [
     id: 'underground-mall',
     number: '06',
     title: 'Underground Mall',
-    chinese: '商场下面的另一座城市',
     era: 'EVERYTHING OPENING',
     sound: 'Escalator hum, toy demos, bright shop music folding into the corridor',
     description: 'Fluorescent passages promised gifts, games and new things arriving. Even going downstairs felt like entering a larger future.',
@@ -110,7 +103,6 @@ const mapNodes: MapNode[] = [
     id: 'carousel-park',
     number: '07',
     title: 'Carousel Park',
-    chinese: '唯一的问题是能不能再坐一圈',
     era: 'PLAY WITHOUT PURPOSE',
     sound: 'Carousel bells, ticket stubs tearing, a mechanical horse beginning another circle',
     description: 'The ride went nowhere, which was exactly the point. Happiness could be measured in whether there was time for one more turn.',
@@ -123,7 +115,6 @@ const mapNodes: MapNode[] = [
     id: 'birthday-market',
     number: '08',
     title: 'Birthday Market',
-    chinese: '拽着爸爸妈妈去挑礼物',
     era: 'SMALL ABUNDANCE',
     sound: 'Wrapping paper, plastic toys, a shopkeeper testing lights and batteries',
     description: 'The gift mattered, but so did the abundance around it: shelves of choices and the certainty that another birthday was coming.',
@@ -166,12 +157,25 @@ function playMapCue(node: MapNode, audioRef: MutableRefObject<AudioContext | nul
   })
 }
 
-function getInitialTransform(): MapTransform {
-  const mobileScale = window.innerWidth <= 820 ? 0.68 : Math.min(1, window.innerWidth / WORLD_WIDTH, window.innerHeight / WORLD_HEIGHT)
+function getCoverScale() {
+  return Math.max(window.innerWidth / WORLD_WIDTH, window.innerHeight / WORLD_HEIGHT)
+}
+
+function keepTownInView(transform: MapTransform): MapTransform {
+  const scale = Math.max(getCoverScale(), transform.scale)
   return {
-    scale: mobileScale,
-    x: (window.innerWidth - WORLD_WIDTH * mobileScale) / 2,
-    y: (window.innerHeight - WORLD_HEIGHT * mobileScale) / 2,
+    scale,
+    x: Math.min(0, Math.max(window.innerWidth - WORLD_WIDTH * scale, transform.x)),
+    y: Math.min(0, Math.max(window.innerHeight - WORLD_HEIGHT * scale, transform.y)),
+  }
+}
+
+function getInitialTransform(): MapTransform {
+  const scale = getCoverScale()
+  return {
+    scale,
+    x: (window.innerWidth - WORLD_WIDTH * scale) / 2,
+    y: (window.innerHeight - WORLD_HEIGHT * scale) / 2,
   }
 }
 
@@ -196,16 +200,22 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
     }
   }, [])
 
+  useEffect(() => {
+    const onResize = () => setTransform((current) => keepTownInView(current))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   const zoomAt = (nextScale: number, clientX = window.innerWidth / 2, clientY = window.innerHeight / 2) => {
     setTransform((current) => {
-      const scale = Math.min(1.55, Math.max(0.55, nextScale))
+      const scale = Math.min(Math.max(2.5, getCoverScale() * 2), Math.max(getCoverScale(), nextScale))
       const worldX = (clientX - current.x) / current.scale
       const worldY = (clientY - current.y) / current.scale
-      return {
+      return keepTownInView({
         scale,
         x: clientX - worldX * scale,
         y: clientY - worldY * scale,
-      }
+      })
     })
   }
 
@@ -244,7 +254,7 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
           const dx = event.clientX - dragRef.current.startX
           const dy = event.clientY - dragRef.current.startY
           if (Math.abs(dx) + Math.abs(dy) > 4) dragRef.current.moved = true
-          setTransform((current) => ({ ...current, x: dragRef.current.originX + dx, y: dragRef.current.originY + dy }))
+          setTransform((current) => keepTownInView({ ...current, x: dragRef.current.originX + dx, y: dragRef.current.originY + dy }))
         }}
         onPointerUp={(event) => {
           dragRef.current.active = false
@@ -285,7 +295,6 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
       <header className="map-header">
         <div>
           <p className="map-wordmark">WHEN TOMORROW FELT BRIGHTER</p>
-          <p className="map-chinese">当明天还在发亮</p>
         </div>
         <div className="map-heading">
           <small>AN EVENING IN THE 2010s</small>
@@ -313,7 +322,6 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
             <button type="button" className="map-card-close" onClick={() => setActiveNode(null)} aria-label="Close place details">×</button>
             <div className="map-card-meta"><span>{activeNode.number}</span>{activeNode.era}</div>
             <h3>{activeNode.title}</h3>
-            <p className="map-card-chinese">{activeNode.chinese}</p>
             <p className="map-card-description">{activeNode.description}</p>
             <div className="map-card-sound">
               <span aria-hidden="true">◌</span>
