@@ -36,9 +36,9 @@ const mapNodes: MapNode[] = [
     era: 'PUBLIC JOY',
     sound: 'String lights clicking on, paper bags, a holiday song from a shop speaker',
     description: 'A few ornaments and warm bulbs could make an ordinary street feel as if everyone was waiting for something good together.',
-    x: 16,
+    x: 17,
     y: 20,
-    glow: '#f3b7ff',
+    glow: '#f3c889',
     frequency: 659.25,
   },
   {
@@ -49,9 +49,9 @@ const mapNodes: MapNode[] = [
     era: 'POSSIBILITY',
     sound: 'Pages turning, a pencil moving across a fashion sketch, quiet shop music',
     description: 'Before adulthood became practical, one book could open a future in which becoming a designer felt completely possible.',
-    x: 50,
-    y: 18,
-    glow: '#ffc76f',
+    x: 46,
+    y: 20,
+    glow: '#f3c889',
     frequency: 523.25,
   },
   {
@@ -62,9 +62,9 @@ const mapNodes: MapNode[] = [
     era: 'UNHURRIED TIME',
     sound: 'An old fan, cicadas, a porcelain plate of watermelon touching the table',
     description: 'Nothing spectacular happened here. The feeling came from having nowhere else to be and believing the afternoon would always return.',
-    x: 83,
-    y: 21,
-    glow: '#ffd99c',
+    x: 88,
+    y: 15,
+    glow: '#f3c889',
     frequency: 220,
   },
   {
@@ -75,9 +75,9 @@ const mapNodes: MapNode[] = [
     era: 'TIME WITHOUT PRICE',
     sound: 'Sneakers on concrete, marbles, cards hitting the ground, bicycle bells',
     description: 'The walk home expanded into games, arguments and one more round. Five-mao cards were enough to build a whole social world.',
-    x: 17,
-    y: 50,
-    glow: '#9dffbd',
+    x: 19,
+    y: 46,
+    glow: '#4fd4df',
     frequency: 783.99,
   },
   {
@@ -88,9 +88,9 @@ const mapNodes: MapNode[] = [
     era: 'WHAT REMAINED',
     sound: 'A metronome, three hesitant notes, the small electronic hum between them',
     description: 'Practice once felt like an obligation. Years later, the same keys became somewhere to rest when the world grew louder.',
-    x: 51,
-    y: 50,
-    glow: '#72d5ff',
+    x: 57,
+    y: 45,
+    glow: '#4fd4df',
     frequency: 329.63,
   },
   {
@@ -101,9 +101,9 @@ const mapNodes: MapNode[] = [
     era: 'EVERYTHING OPENING',
     sound: 'Escalator hum, toy demos, bright shop music folding into the corridor',
     description: 'Fluorescent passages promised gifts, games and new things arriving. Even going downstairs felt like entering a larger future.',
-    x: 82,
-    y: 50,
-    glow: '#ff83d5',
+    x: 84,
+    y: 49,
+    glow: '#4fd4df',
     frequency: 261.63,
   },
   {
@@ -114,9 +114,9 @@ const mapNodes: MapNode[] = [
     era: 'PLAY WITHOUT PURPOSE',
     sound: 'Carousel bells, ticket stubs tearing, a mechanical horse beginning another circle',
     description: 'The ride went nowhere, which was exactly the point. Happiness could be measured in whether there was time for one more turn.',
-    x: 29,
-    y: 80,
-    glow: '#ffbd78',
+    x: 22,
+    y: 78,
+    glow: '#f3c889',
     frequency: 587.33,
   },
   {
@@ -127,9 +127,9 @@ const mapNodes: MapNode[] = [
     era: 'SMALL ABUNDANCE',
     sound: 'Wrapping paper, plastic toys, a shopkeeper testing lights and batteries',
     description: 'The gift mattered, but so did the abundance around it: shelves of choices and the certainty that another birthday was coming.',
-    x: 69,
-    y: 80,
-    glow: '#ff799f',
+    x: 82,
+    y: 79,
+    glow: '#f3c889',
     frequency: 698.46,
   },
 ]
@@ -255,8 +255,8 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
         <div className="map-world" style={worldStyle}>
           <img
             className="map-art"
-            src={`${import.meta.env.BASE_URL}images/brighter-worlds-map.webp`}
-            alt="A cosmic map of eight miniature worlds from ordinary life in 2010s China"
+            src={`${import.meta.env.BASE_URL}images/night-town-map.webp`}
+            alt="An isometric night town with eight warmly lit places connected by blue routes"
             draggable="false"
           />
           {mapNodes.map((node) => {
@@ -288,8 +288,8 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
           <p className="map-chinese">当明天还在发亮</p>
         </div>
         <div className="map-heading">
-          <small>THE BRIGHTER YEARS · 2010s</small>
-          <h2>A Map of Possible Tomorrows</h2>
+          <small>AN EVENING IN THE 2010s</small>
+          <h2>Find your way through town.</h2>
         </div>
         <button type="button" className="return-button" aria-label="Return to the flower valley" onClick={onReturn}>
           <span aria-hidden="true">←</span><span className="return-label">Return to the valley</span>
@@ -303,8 +303,8 @@ function MemoryMap({ onReturn }: MemoryMapProps) {
       </div>
 
       <div className="map-guide">
-        <p>Drag to move · Scroll to zoom · Choose any world</p>
-        <span><b>08</b> places connected by no fixed route</span>
+        <p>Drag to explore · Scroll to zoom · Choose any place</p>
+        <span><b>08</b> places, no fixed route</span>
       </div>
 
       <aside className={`map-card ${activeNode ? 'open' : ''}`} aria-live="polite">
